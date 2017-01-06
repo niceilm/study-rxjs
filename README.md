@@ -3,12 +3,16 @@
 ## LearnRxJS
 - https://www.learnrxjs.io
 
-### npm
+### Test
+#### settings
+```
+npm i
+```
+#### npm
 ```
 npm test -- learnrxjs/**
 ```
-
-### intellij / webstorm
+#### intellij / webstorm
 extra mocha options
 ```
 --require ts-node/register

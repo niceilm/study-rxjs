@@ -302,33 +302,141 @@ Timer Three Latest: ${timerValThree}`);
        many inner observables to subscribe to at a time.  The rest of the observables are stored
        in a backlog waiting to be subscribe.
        */
-      console.time('time');
       const example = Observable.range(1, 10).map(val => interval.take(10).map(ival => `interval : ${val} ${ival}`))
         .mergeAll(5)
         .subscribe({
-          next: val => console.log(val),
-          complete: () => {
-            console.timeEnd('time')
-            done();
-          }
+          next: console.log,
+          complete: done
         });
     });
   });
   context('Observable.race', () => {
-    it('create', () => {
+    it('race with 4 observables', done => {
+      //take the first observable to emit
+      const example = Observable.race(
+        //emit every 1.5s
+        Observable.interval(1500),
+        //emit every 1s
+        Observable.interval(1000).mapTo('1s won!'),
+        //emit every 2s
+        Observable.interval(2000),
+        //emit every 2.5s
+        Observable.interval(2500)
+      );
+      const subscribe = example.subscribe(console.log, console.error);
+      setTimeout(() => {
+        subscribe.unsubscribe();
+        done();
+      }, 5000);
     });
+
+    it('race with an error', done => {
+      //Throws an error and ignore the rest of the observables.
+      const first = Observable.of('first').delay(100).map(() => {
+        throw 'error!!'
+      });
+      const second = Observable.of('second').delay(200);
+      const third = Observable.of('third').delay(300);
+
+      const race = Observable.race(first, second, third).subscribe(console.log, error => {
+        console.error(error);
+        done();
+      });
+    })
   });
+
   context('Observable.startWith', () => {
-    it('create', () => {
+    it('startWith on number sequence', () => {
+      const source = Observable.of(1, 2, 3);
+
+      const example = source.startWith(0);
+
+      const subscribe = example.subscribe(console.log);
+    });
+
+    it('startWith for initial scan value', () => {
+      const source = Observable.of('World!', 'Goodbye', 'World!');
+
+      const example = source
+        .startWith('Hello')
+        .scan((acc, curr) => `${acc} - ${curr}`);
+
+      const subscribe = example.subscribe(console.log);
+    });
+
+    it('startWith multiple values', done => {
+      const source = Observable.interval(1000);
+      const example = source.startWith(-3, -2, -1);
+      const subscribe = example.subscribe(console.log);
+
+      setTimeout(() => {
+        subscribe.unsubscribe();
+        done();
+      }, 5000);
     });
   });
+
   context('Observable.withLatestFrom', () => {
-    it('create', () => {
+    it('Latest value from quicker second source', done => {
+      const source = Observable.interval(5000);
+      const secondSource = Observable.interval(1000);
+      const example = source
+        .withLatestFrom(secondSource)
+        .map(([first, second]) => {
+          return `First Source (5s): ${first} Second Source (1s): ${second}`;
+        });
+      const subscribe = example.subscribe(console.log);
+
+      setTimeout(() => {
+        subscribe.unsubscribe();
+        done();
+      }, 20000);
+    });
+
+    it('Slower second source', done => {
+      const source = Observable.interval(5000);
+      const secondSource = Observable.interval(1000);
+
+      const example = secondSource
+        .withLatestFrom(source)
+        .map(([first, second]) => {
+          return `Source (1s): ${first} Latest From (5s): ${second}`;
+        });
+      const subscribe = example.subscribe(console.log);
+
+      setTimeout(() => {
+        subscribe.unsubscribe();
+        done();
+      }, 20000);
     });
   });
+
   context('Observable.zip', () => {
-    it('create', () => {
+    it('zip multiple observables emitting at alternate intervals', done => {
+      const sourceOne = Observable.of('Hello');
+      const sourceTwo = Observable.of('World!');
+      const sourceThree = Observable.of('Goodbye');
+      const sourceFour = Observable.of('World!');
+
+      const example = Observable
+        .zip(
+          sourceOne,
+          sourceTwo.delay(1000),
+          sourceThree.delay(2000),
+          sourceFour.delay(3000)
+        );
+
+      const subscribe = example.subscribe(console.log, console.error, done);
+    });
+
+    it('zip when 1 observable completes', done => {
+      const interval = Observable.interval(1000);
+      const example = Observable
+        .zip(
+          interval,
+          interval.take(2)
+        );
+      const subscribe = example.subscribe(console.log, console.error, done);
     });
   });
-})
-;
+});

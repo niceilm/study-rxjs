@@ -4,6 +4,8 @@
 - https://www.learnrxjs.io
 
 ### Test
+**This test is only typescript version**
+
 #### settings
 ```
 npm i
@@ -37,6 +39,7 @@ extra mocha options
 
 ### Useful
 - [Interactive diagrams of Rx Observables](http://rxmarbles.com)
+- [Awesome RxJS](https://github.com/ichpuchtli/awesome-rxjs)
 
 ### Slides
 - [Everything is a stream.](http://slides.com/robwormald/everything-is-a-stream/)

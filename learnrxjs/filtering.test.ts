@@ -48,26 +48,20 @@ describe('RxJS - Filtering', function () {
    */
   context('distinctUntilChanged', () => {
     it('distinctUntilChanged with basic values', () => {
-      //only output distinct values, based on the last emitted value
       const myArrayWithDuplicatesInARow = Observable.from([1, 1, 2, 2, 3, 1, 2, 3]);
 
       const distinctSub = myArrayWithDuplicatesInARow
         .distinctUntilChanged()
-        //output: 1,2,3,1,2,3
         .subscribe(val => console.log('DISTINCT SUB:', val));
 
       const nonDistinctSub = myArrayWithDuplicatesInARow
-      //output: 1,1,2,2,3,1,2,3
         .subscribe(val => console.log('NON DISTINCT SUB:', val));
     });
     it('distinctUntilChanged with objects', () => {
       const sampleObject = { name: 'Test' };
-      //Objects must be same reference
       const myArrayWithDuplicateObjects = Observable.from([sampleObject, sampleObject, sampleObject]);
-      //only out distinct objects, based on last emitted value
       const nonDistinctObjects = myArrayWithDuplicateObjects
         .distinctUntilChanged()
-        //output: 'DISTINCT OBJECTS: {name: 'Test'}
         .subscribe(val => console.log('DISTINCT OBJECTS:', val));
     });
   });
@@ -78,40 +72,26 @@ describe('RxJS - Filtering', function () {
    */
   context('filter', () => {
     it('filter for even numbers', () => {
-      //emit (1,2,3,4,5)
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //filter out non-even numbers
       const example = source.filter(num => num % 2 === 0);
-      //output: "Even number: 2", "Even number: 4"
       const subscribe = example.subscribe(val => console.log(`Even number: ${val}`));
     });
 
     it('filter objects based on property', () => {
-      //emit ({name: 'Joe', age: 31}, {name: 'Bob', age:25})
       const source = Observable.from([{ name: 'Joe', age: 31 }, { name: 'Bob', age: 25 }]);
-      //filter out people with age under 30
       const example = source.filter(person => person.age >= 30);
-      //output: "Over 30: Joe"
       const subscribe = example.subscribe(val => console.log(`Over 30: ${val.name}`));
     });
 
     it('filter for number greater than specified value', done => {
-      //emit every second
-      const source = Observable.interval(1000);
-      //filter out all values until interval is greater than 5
+      const source = Observable.interval(100);
       const example = source.filter(num => num > 5);
-      /*
-       "Number greater than 5: 6"
-       "Number greater than 5: 7"
-       "Number greater than 5: 8"
-       "Number greater than 5: 9"
-       */
       const subscribe = example.subscribe(val => console.log(`Number greater than 5: ${val}`), console.error);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 10000);
+      }, 1000);
     });
   });
 
@@ -122,31 +102,23 @@ describe('RxJS - Filtering', function () {
   context('first', () => {
     it('First value from sequence', () => {
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //no arguments, emit first value
       const example = source.first();
-      //output: "First value: 1"
       const subscribe = example.subscribe(val => console.log(`First value: ${val}`), console.error, () => console.log('complete'));
     });
     it('First value to pass predicate', () => {
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //emit first item to pass test
       const example = source.first(num => num === 5);
-      //output: "First to pass test: 5"
       const subscribe = example.subscribe(val => console.log(`First to pass test: ${val}`));
     });
     it('Using optional projection function', () => {
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //using optional projection function
       const example = source.first(num => num % 2 === 0,
         (result, index) => `First even: ${result} is at index: ${index}`);
-      //output: "First even: 2 at index: 1"
       const subscribe = example.subscribe(val => console.log(val));
     });
     it('Utilizing default value', () => {
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //no value will pass, emit default
       const example = source.first(val => val > 5, val => `Value: ${val}`, 'Nothing');
-      //output: 'Nothing'
       const subscribe = example.subscribe(val => console.log(val));
     });
   });
@@ -157,26 +129,16 @@ describe('RxJS - Filtering', function () {
    */
   context('ignoreElements', () => {
     it('Ignore all elements from source', done => {
-      //emit value every 100ms
       const source = Observable.interval(100);
-      //ignore everything but complete
-      const example = source
-        .take(5)
-        .ignoreElements();
-      //output: "COMPLETE!"
-      const subscribe = example.subscribe(
-        val => console.log(`NEXT: ${val}`),
-        val => console.log(`ERROR: ${val}`),
-        () => {
+      const example = source.take(5).ignoreElements();
+      const subscribe = example.subscribe(val => console.log(`NEXT: ${val}`), val => console.log(`ERROR: ${val}`), () => {
           console.log('COMPLETE!');
           done();
         }
       );
     });
     it('Only displaying error', done => {
-      //emit value every 100ms
       const source = Observable.interval(100);
-      //ignore everything but error
       const error = source
         .flatMap(val => {
           if (val === 4) {
@@ -185,14 +147,10 @@ describe('RxJS - Filtering', function () {
           return Observable.of(val);
         })
         .ignoreElements();
-      //output: "ERROR: ERROR AT 4"
-      const subscribe = error.subscribe(
-        val => console.log(`NEXT: ${val}`),
-        val => {
+      const subscribe = error.subscribe(val => console.log(`NEXT: ${val}`), val => {
           console.log(`ERROR: ${val}`);
           done();
-        },
-        () => {
+        }, () => {
           console.log('SECOND COMPLETE!');
           done();
         }
@@ -207,30 +165,22 @@ describe('RxJS - Filtering', function () {
   context('last', () => {
     it('Last value in sequence', () => {
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //no arguments, emit last value
       const example = source.last();
-      //output: "Last value: 5"
       const subscribe = example.subscribe(val => console.log(`Last value: ${val}`));
     });
     it('Last value to pass predicate', () => {
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //emit last even number
       const exampleTwo = source.last(num => num % 2 === 0);
-      //output: "Last to pass test: 4"
       const subscribeTwo = exampleTwo.subscribe(val => console.log(`Last to pass test: ${val}`));
     });
     it('Last with result selector', () => {
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //supply an option projection function for the second parameter
       const exampleTwo = source.last(v => v > 4, v => `The highest emitted number was ${v}`);
-      //output: 'The highest emitted number was 5'
       const subscribeTwo = exampleTwo.subscribe(val => console.log(val));
     });
     it('Last with default value', () => {
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //no values will pass given predicate, emit default
       const exampleTwo = source.last<number, string>(v => v > 5, v => `${v}`, 'Nothing!');
-      //output: 'Nothing!'
       const subscribeTwo = exampleTwo.subscribe(val => console.log(val));
     });
   });
@@ -240,34 +190,27 @@ describe('RxJS - Filtering', function () {
    * Sample from source when provided observable emits.
    */
   context('sample', () => {
-    it('Sample source every 2 seconds', done => {
-      //emit value every 1s
-      const source = Observable.interval(1000);
-      //sample last emitted value from source every 2s
-      const example = source.sample(Observable.interval(2000));
-      //output: 2..4..6..8..
-      const subscribe = example.subscribe(val => console.log(val));
+    it('Sample source every 200ms', done => {
+      const source = Observable.interval(100);
+      const example = source.sample(Observable.interval(200));
+      const subscribe = example.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 10000);
+      }, 1000);
     });
     it('Sample source when interval emits', done => {
       const source = Observable.zip(
-        //emit 'Joe', 'Frank' and 'Bob' in sequence
         Observable.from(['Joe', 'Frank', 'Bob']),
-        //emit value every 2s
-        Observable.interval(2000)
+        Observable.interval(200)
       );
-      //sample last emitted value from source every 2.5s
-      const example = source.sample(Observable.interval(2500));
-      //output: ["Joe", 0]...["Frank", 1]...........
-      const subscribe = example.subscribe(val => console.log(val));
+      const example = source.sample(Observable.interval(250));
+      const subscribe = example.subscribe(console.log);
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 10000);
+      }, 1000);
     });
   });
 
@@ -277,12 +220,9 @@ describe('RxJS - Filtering', function () {
    */
   context('single', () => {
     it('Emit first number passing predicate', () => {
-      //emit (1,2,3,4,5)
       const source = Observable.from([1, 2, 3, 4, 5]);
-      //emit one item that matches predicate
       const example = source.single(val => val === 4);
-      //output: 4
-      const subscribe = example.subscribe(val => console.log(val));
+      const subscribe = example.subscribe(console.log);
     });
   });
 
@@ -292,17 +232,14 @@ describe('RxJS - Filtering', function () {
    */
   context('skip', () => {
     it('Skipping values before emission', done => {
-      //emit every 1s
-      const source = Observable.interval(500);
-      //skip the first 5 emitted values
+      const source = Observable.interval(100);
       const example = source.skip(5);
-      //output: 5...6...7...8........
-      const subscribe = example.subscribe(val => console.log(val));
+      const subscribe = example.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 5000);
+      }, 1000);
     });
   });
 
@@ -312,17 +249,14 @@ describe('RxJS - Filtering', function () {
    */
   context('skipUntil', () => {
     it('Skip until observable emits', done => {
-      //emit every 1s
-      const source = Observable.interval(500);
-      //skip emitted values from source until inner observable emits (6s)
-      const example = source.skipUntil(Observable.timer(3000));
-      //output: 5...6...7...8........
-      const subscribe = example.subscribe(val => console.log(val));
+      const source = Observable.interval(100);
+      const example = source.skipUntil(Observable.timer(500));
+      const subscribe = example.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 5000);
+      }, 1000);
     });
   });
 
@@ -332,12 +266,9 @@ describe('RxJS - Filtering', function () {
    */
   context('skipWhile', () => {
     it('Skip while values below threshold', done => {
-      //emit every 100ms
       const source = Observable.interval(100);
-      //skip emitted values from source while value is less than 5
       const example = source.skipWhile(val => val < 5);
-      //output: 5...6...7...8........
-      const subscribe = example.subscribe(val => console.log(val));
+      const subscribe = example.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
@@ -352,20 +283,14 @@ describe('RxJS - Filtering', function () {
    */
   context('take', () => {
     it('Take 1 value from source', () => {
-      //emit 1,2,3,4,5
       const source = Observable.of(1, 2, 3, 4, 5);
-      //take the first emitted value then complete
       const example = source.take(1);
-      //output: 1
-      const subscribe = example.subscribe(val => console.log(val));
+      const subscribe = example.subscribe(console.log);
     });
     it('Take the first 5 values from source', done => {
-      //emit value every 1s
-      const interval = Observable.interval(1000);
-      //take the first 5 emitted values
+      const interval = Observable.interval(100);
       const example = interval.take(5);
-      //output: 0,1,2,3,4
-      const subscribe = example.subscribe(val => console.log(val), console.error, done);
+      const subscribe = example.subscribe(console.log, console.error, done);
     });
   });
 
@@ -378,7 +303,7 @@ describe('RxJS - Filtering', function () {
       const source = Observable.interval(100);
       const timer = Observable.timer(500);
       const example = source.takeUntil(timer);
-      const subscribe = example.subscribe(val => console.log(val), console.error, done);
+      const subscribe = example.subscribe(console.log, console.error, done);
     });
     it('Take the first 5 even numbers', done => {
       const source = Observable.interval(100);
@@ -391,7 +316,7 @@ describe('RxJS - Filtering', function () {
         .withLatestFrom(evenNumberCount)
         .map(([val, count]) => `Even number (${count}) : ${val}`)
         .takeUntil(fiveEvenNumbers);
-      const subscribe = example.subscribe(val => console.log(val), console.error, done);
+      const subscribe = example.subscribe(console.log, console.error, done);
     });
   });
 
@@ -403,7 +328,7 @@ describe('RxJS - Filtering', function () {
     it('Take values under limit', () => {
       const source = Observable.of(1, 2, 3, 4, 5);
       const example = source.takeWhile(val => val <= 4);
-      const subscribe = example.subscribe(val => console.log(val));
+      const subscribe = example.subscribe(console.log);
     });
   });
 
@@ -413,23 +338,23 @@ describe('RxJS - Filtering', function () {
    */
   context('throttle', () => {
     it('Throttle for 2 seconds, based on second observable', done => {
-      const source = Observable.interval(1000);
-      const example = source.throttle(val => Observable.interval(3000));
+      const source = Observable.interval(100);
+      const example = source.throttle(val => Observable.interval(300));
       const subscribe = example.subscribe(val => console.log(val));
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 10000);
+      }, 1000);
     });
     it('Throttle with promise', done => {
-      const source = Observable.interval(1000);
-      const promise = val => new Promise(resolve => setTimeout(() => resolve(`Resolved: ${val}`), val * 100));
+      const source = Observable.interval(100);
+      const promise = val => new Promise(resolve => setTimeout(() => resolve(`Resolved: ${val}`), val * 10));
       const example = source.throttle(promise).map(val => `Throttled off Promise: ${val}`);
       const subscribe = example.subscribe(val => console.log(val));
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 10000);
+      }, 1000);
     });
   });
 
@@ -438,14 +363,14 @@ describe('RxJS - Filtering', function () {
    * Emit latest value when specified duration has passed.
    */
   context('throttleTime', () => {
-    it('Receive latest value every 5 seconds', done => {
-      const source = Observable.interval(1000);
-      const example = source.throttleTime(5000);
+    it('Receive latest value every 500ms', done => {
+      const source = Observable.interval(100);
+      const example = source.throttleTime(500);
       const subscribe = example.subscribe(val => console.log(val));
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 15000);
+      }, 1500);
     });
     it('Throttle merged observable', done => {
       const source = Observable
@@ -458,7 +383,7 @@ describe('RxJS - Filtering', function () {
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 5000);
+      }, 2000);
     });
   });
 

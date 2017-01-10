@@ -1,20 +1,24 @@
-import { Observable, Subscription } from 'rxjs';
+import { Observable } from 'rxjs';
 
-describe('RxJS - create', function () {
-  this.timeout(10000);
+describe('RxJS - Creation Operators', function () {
+  this.timeout(20000);
   afterEach(() => console.log('\n'));
-  context('Observable.create', () => {
-    it('create', () => {
+
+  /**
+   * signature: create(subscribe: function)
+   * Create an observable with given subscription function.
+   */
+  context('create', () => {
+    it(' Observable that emits multiple values', () => {
       const hello = Observable.create((observer) => {
         observer.next('Hello');
         observer.next('World');
       });
 
-      const subscribe: Subscription = hello.subscribe(value => console.log(value));
-      subscribe.unsubscribe();
+      const subscribe = hello.subscribe(console.log);
     });
 
-    it('create 2', done => {
+    it('Observable that emits even numbers on timer', done => {
       const evenNumbers = Observable.create((observer) => {
         let value = 0;
         const interval = setInterval(() => {
@@ -22,64 +26,66 @@ describe('RxJS - create', function () {
             observer.next(value);
           }
           value++;
-        }, 500);
+        }, 50);
 
         return () => clearInterval(interval);
       });
-      const subscribe = evenNumbers.subscribe(val => console.log(val));
+      const subscribe = evenNumbers.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 5000);
+      }, 1000);
     });
   });
 
-  context('Observable.empty', () => {
-    it('empty', () => {
+  /**
+   * signature: empty(scheduler: Scheduler): Observable
+   * Observable that immediately completes.
+   */
+  context('empty', () => {
+    it('empty immediately completes', () => {
       const example = Observable.empty();
-      const subscribe = example.subscribe({
-        next: () => console.log('Next'),
-        complete: () => console.log('Complete!')
-      });
-      subscribe.unsubscribe();
+      const subscribe = example.subscribe(() => console.log('Next'), null, () => console.log('Complete!'));
     });
   });
 
-  context('Observable.from', () => {
-    it('from', () => {
+  /**
+   * signature: from(ish: ObservableInput, mapFn: function, thisArg: any, scheduler: Scheduler): Observable
+   * Turn an array, promise, or iterable into an observable.
+   */
+  context('from', () => {
+    it('Observable from array', () => {
       const arraySource = Observable.from([1, 2, 3, 4, 5]);
-      const subscribe = arraySource.subscribe(val => console.log(val));
-      subscribe.unsubscribe();
+      const subscribe = arraySource.subscribe(console.log);
     });
 
-    it('from promise', done => {
+    it('Observable from promise', () => {
       const promiseSource = Observable.from(new Promise(resolve => resolve('Hello World!')));
-      const subscribe = promiseSource.subscribe(val => {
-        console.log(val);
-        subscribe.unsubscribe();
-        done();
-      });
+      const subscribe = promiseSource.subscribe(console.log);
     });
 
-    it('from collection', () => {
+    it('Observable from collection', () => {
       const map = new Map<number, string>();
       map.set(1, 'Hi');
       map.set(2, 'Bye');
 
       const mapSource = Observable.from(map as any as ArrayLike<any>);
-      const subscribe = mapSource.subscribe(val => console.log(val));
+      const subscribe = mapSource.subscribe(console.log);
     });
 
-    it('from String', () => {
+    it('Observable from string', () => {
       const source = Observable.from('Hello World');
-      const subscribe = source.subscribe(val => console.log(val));
+      const subscribe = source.subscribe(console.log);
     });
   });
 
+  /**
+   * signature: fromPromise(promise: Promise, scheduler: Scheduler): Observable
+   * Create observable from promise, emitting result.
+   */
   context('fromPromise', () => {
-    it('promise', done => {
-      //example promise that will resolve or reject based on input
+    it('Converting promise to observable and catching errors', () => {
       const myPromise = (willReject) => {
         return new Promise((resolve, reject) => {
           if (willReject) {
@@ -88,33 +94,35 @@ describe('RxJS - create', function () {
           resolve('Resolved!');
         })
       };
-      //emit true, then false
       const source = Observable.of(true, false);
       const example = source
         .mergeMap(val => Observable
-        //turn promise into observable
           .fromPromise(myPromise(val))
-          //catch and gracefully handle rejections
           .catch(error => Observable.of(`Error: ${error}`)));
-      //output: 'Error: Rejected!', 'Resolved!'
-      const subscribe = example.subscribe(val => {
-        console.log(val);
-      }, error => console.error(error), () => done());
+      const subscribe = example.subscribe(console.log);
     });
   });
 
+  /**
+   * signature: interval(period: number, scheduler: Scheduler): Observable
+   * Emit numbers in sequence based on provided timeframe.
+   */
   context('interval', () => {
     it('interval', done => {
-      const source = Observable.interval(1000);
-      const subscribe = source.subscribe(val => console.log(val));
+      const source = Observable.interval(100);
+      const subscribe = source.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 5000);
+      }, 1000);
     });
   });
 
+  /**
+   * signature: of(...values, scheduler: Scheduler): Observable
+   * Emit variable amount of values in a sequence.
+   */
   context('of', () => {
     it('Emitting a sequence of numbers', () => {
       const source = Observable.of(1, 2, 3, 4, 5);
@@ -131,6 +139,10 @@ describe('RxJS - create', function () {
     });
   });
 
+  /**
+   * signature: range(start: number, count: number, scheduler: Scheduler): Observable
+   * Emit numbers in provided range in sequence.
+   */
   context('range', () => {
     it('Emit range 1-10', () => {
       const source = Observable.range(1, 10);
@@ -138,28 +150,27 @@ describe('RxJS - create', function () {
     });
   });
 
+  /**
+   * signature: throw(error: any, scheduler: Scheduler): Observable
+   * Emit error on subscription.
+   */
   context('throw', () => {
     it('Throw error on subscription', () => {
       const source = Observable.throw('This is an error!');
       const subscribe = source.subscribe(val => console.log(val), error => console.error(error), () => console.log('complete'));
-      const subscribe2 = source.subscribe({
-        next: val => console.log(val),
-        complete: () => console.log('complete'),
-        error: error => console.error(`Error ${error}`)
-      });
     });
   });
 
+  /**
+   * signature: timer(initialDelay: number | Date, period: number, scheduler: Scheduler): Observable
+   * After given duration, emit numbers in sequence every specified duration.
+   */
   context('timer', () => {
     it('timer emits 1 value then completes', done => {
-      const source = Observable.timer(1000);
-      const subscribe = source.subscribe({
-        next: val => console.log(val),
-        complete: () => {
-          console.log('complete');
-          done();
-        },
-        error: error => console.error(`Error ${error}`)
+      const source = Observable.timer(100);
+      const subscribe = source.subscribe(console.log, null, () => {
+        console.log('complete');
+        done();
       });
     });
 
@@ -170,8 +181,7 @@ describe('RxJS - create', function () {
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 9000)
+      }, 5000)
     });
   });
-
 });

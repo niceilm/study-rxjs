@@ -1,9 +1,14 @@
 import { Observable } from 'rxjs';
 
 describe('RxJS - Error Handling', function () {
-  this.timeout(60000);
+  this.timeout(30000);
   afterEach(() => console.log('\n'));
-  context('Observable.catch', () => {
+
+  /**
+   * signature: catch(project : function): Observable
+   * Gracefully handle errors in an observable sequence.
+   */
+  context('catch', () => {
     it('Catching error from observable', () => {
       const source = Observable.throw('This is an error');
       const example = source.catch(value => Observable.of(`I caught: ${value}`));
@@ -11,72 +16,62 @@ describe('RxJS - Error Handling', function () {
     });
 
     it('Catching rejected promise', done => {
-      //create promise that immediately rejects
-      const myBadPromise = () => new Promise((resolve, reject) => reject('Rejected!'));
-      //emit single value after 1 second
-      const source = Observable.timer(1000);
-      //catch rejected promise, returning observable containing error message
-      const example = source.flatMap(() => Observable
+      const myBadPromise = () => new Promise((resolve, reject) => setTimeout(() => reject('Rejected!'), 200));
+      const source = Observable.timer(100);
+      const example = source.mergeMap(() => Observable
         .fromPromise(myBadPromise())
         .catch(error => Observable.of(`Bad Promise: ${error}`))
       );
-      //output: 'Bad Promise: Rejected'
-      const subscribe = example.subscribe(val => console.log(val), error => console.error(error), () => done());
+      const subscribe = example.subscribe(console.log, console.error, done);
     });
   });
-  context('Observable.retry', () => {
+
+  /**
+   * signature: retry(number: number): Observable
+   * Retry an observable sequence a specific number of times should an error occur.
+   */
+  context('retry', () => {
     it('Retry 2 times on error', done => {
-      //emit value every 1s
       const source = Observable.interval(500);
       const example = source
         .flatMap(val => {
-          //throw error for demonstration
           if (val > 5) {
             return Observable.throw('Error!');
           }
           return Observable.of(val);
         })
-        //retry 2 times on error
         .retry(2);
-      /*
-       output:
-       0..1..2..3..4..5..
-       0..1..2..3..4..5..
-       0..1..2..3..4..5..
-       "Error!: Retried 2 times then quit!"
-       */
+
       const subscribe = example
-        .subscribe({
-          next: val => console.log(val),
-          error: val => {
-            console.log(`${val}: Retried 2 times then quit!`);
-            done();
-          }
+        .subscribe(console.log, val => {
+          console.log(`${val}: Retried 2 times then quit!`);
+          done();
         });
     });
   });
-  context('Observable.retryWhen', () => {
+
+  /**
+   * signature: retryWhen(receives: (errors: Observable) => Observable, the: scheduler): Observable
+   * Retry an observable sequence on error based on custom criteria.
+   */
+  context('retryWhen', () => {
     it('Trigger retry after specified duration', done => {
-      //emit value every 1s
-      const source = Observable.interval(500);
+      const source = Observable.interval(50);
       const example = source.map(val => {
         if (val > 5) {
-          //error will be picked up by retryWhen
           throw val;
         }
         return val;
       }).retryWhen(errors => errors
-        //log error message
-          .do(val => console.log(`Value ${val} was too high!`))
-          //restart in 5 seconds
-          .delayWhen(val => Observable.timer(val * 500))
+        .do(val => console.log(`Value ${val} was too high!`))
+        .delayWhen(val => Observable.timer(val * 50))
       );
       const subscribe = example.subscribe(val => console.log(val));
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 20000)
+      }, 3000)
     });
   });
 });

@@ -1,5 +1,12 @@
 import { Observable } from 'rxjs';
 describe('RxJS - Conditional', function () {
+  this.timeout(30000);
+  afterEach(() => console.log('\n'));
+
+  /**
+   * signature: defaultIfEmpty(defaultValue: any): Observable
+   * Emit given value if nothing is emitted before completion.
+   */
   context('defaultIfEmpty', () => {
     it('Default for empty value', () => {
       const empty = Observable.of();
@@ -20,21 +27,16 @@ describe('RxJS - Conditional', function () {
    */
   context('every', () => {
     it('Some values false', () => {
-      //emit 5 values
       const source = Observable.of(1, 2, 3, 4, 5);
       const example = source
-      //is every value even?
         .every(val => val % 2 === 0);
-      //output: false
       const subscribe = example.subscribe(val => console.log(val));
     });
+
     it('All values true', () => {
-      //emit 5 values
       const allEvens = Observable.of(2, 4, 6, 8, 10);
       const example = allEvens
-      //is every value even?
         .every(val => val % 2 === 0);
-      //output: true
       const subscribe = example.subscribe(val => console.log(val));
     });
   });

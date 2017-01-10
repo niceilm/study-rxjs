@@ -36,6 +36,7 @@ extra mocha options
 - [RxJS for Async.js Users](https://github.com/Reactive-Extensions/RxJS/blob/master/doc/mapping/async/comparing.md)
 - [The introduction to Reactive Programming you've been missing](https://gist.github.com/staltz/868e7e9bc2a7b8c1f754)
 - [Reactive Programming](https://sculove.github.io/blog/2016/06/22/Reactive-Programming/)[한글]
+- [Hot vs Cold Observables](https://medium.com/@benlesh/hot-vs-cold-observables-f8094ed53339#.ijpocs1ev)
 
 ### Useful
 - [Interactive diagrams of Rx Observables](http://rxmarbles.com)
@@ -46,3 +47,6 @@ extra mocha options
 - [Desugar Angular 2, Meteor, RxJS 5, and ngrx](https://docs.google.com/presentation/d/1hjhVfz4PF11L65kaNFU5ZG40yEsQSMqsmNM6O2zeJiQ/edit)
 - [ReactiveX + Meteor 종단간 암호화 구현 사례](http://slides.com/acidsound/rxmeteor_e2e#/)[한글]
 - [웹 프론트엔드 개발자의 얕고 넓은 Rx 이야기](http://www.slideshare.net/jeokrang/rx-70197043)[한글]
+
+## Video
+- [Egghead RxJS](https://egghead.io/technologies/rx)

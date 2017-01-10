@@ -1,337 +1,255 @@
 import { Observable } from 'rxjs';
 
-describe('RxJS - combination', function () {
+describe('RxJS - Combination', function () {
   this.timeout(30000);
   afterEach(() => console.log('\n'));
-  context('Observable.combineAll', () => {
+
+  /**
+   * signature: combineAll(project: function): Observable
+   * When source observable completes use combineLatest with collected observables.
+   */
+  context('combineAll', () => {
     it('Mapping to inner interval observable', done => {
-      //emit every 1s, take 2
-      const source = Observable.interval(1000).take(2);
-      //map first value to 500ms interval and second to 1s, take two values
-      const example = source.map(val => Observable.interval(val + 500).take(2));
-      /*
-       2 values from source will map to 2 (inner) interval observables that emit every .5s
-       and 1s. combineAll uses combineLatest strategy, emitting the last value from each
-       whenever either observable emits a value
-       */
+      const source = Observable.interval(100).take(2);
+      const example = source.map(val => Observable.interval(val + 50).take(2));
       const combined = example.combineAll();
-
-      const subscribe = combined.subscribe({
-        next: val => console.log(val),
-        complete: () => done()
-      });
+      const subscribe = combined.subscribe(console.log, null, done);
     });
-    it('Mapping to inner interval observable with projection', done => {
-      //emit every 1s, take 2
-      const source = Observable.interval(1000).take(2);
 
-      //map first value to 500ms interval and second to 1s, take two values
-      const example = source.map(val => Observable.interval(val + 500).take(2));
-      /*
-       2 values from source will map to 2 (inner) interval observables that emit every .5s
-       and 1s. combineAll uses combineLatest strategy, emitting the last value from each
-       whenever either observable emits a value
-       */
+    it('Mapping to inner interval observable with projection', done => {
+      const source = Observable.interval(100).take(2);
+      const example = source.map(val => Observable.interval(val + 50).take(2));
       const combined = example.combineAll((one, two) => `one: ${one} two: ${two}`);
 
-      const subscribe = combined.subscribe({
-        next: val => console.log(val),
-        complete: () => done()
-      });
+      const subscribe = combined.subscribe(console.log, null, done);
     });
   });
-  context('Observable.combineLatest', () => {
-    it('Combining observables emitting at 3 intervals', done => {
-      //timerOne emits first value at 1s, then once every 4s
-      const timerOne = Observable.timer(1000, 4000);
-      //timerTwo emits first value at 2s, then once every 4s
-      const timerTwo = Observable.timer(2000, 4000);
-      //timerThree emits first value at 3s, then once every 4s
-      const timerThree = Observable.timer(3000, 4000);
 
-      //when one timer emits, emit the latest values from each timer as an array
+  /**
+   * signature: combineLatest(observables: ...Observable, project: function): Observable
+   * When any observable emits a value, emit the latest value from each.
+   */
+  context('combineLatest', () => {
+    it('Combining observables emitting at 3 intervals', done => {
+      const timerOne = Observable.timer(100, 400);
+      const timerTwo = Observable.timer(200, 400);
+      const timerThree = Observable.timer(300, 400);
+
       const combined = Observable.combineLatest(timerOne, timerTwo, timerThree);
 
       const subscribe = combined.subscribe(latestValues => {
-        //grab latest emitted values for timers one, two, and three
         const [timerValOne, timerValTwo, timerValThree] = latestValues;
         console.log(`Timer One Latest: ${timerValOne}, 
 Timer Two Latest: ${timerValTwo}, 
 Timer Three Latest: ${timerValThree}`);
       });
 
-      setTimeout(done, 20000)
-    });
-    it('combineLatest with projection function', done => {
-      //timerOne emits first value at 1s, then once every 4s
-      const timerOne = Observable.timer(1000, 4000);
-      //timerTwo emits first value at 2s, then once every 4s
-      const timerTwo = Observable.timer(2000, 4000);
-      //timerThree emits first value at 3s, then once every 4s
-      const timerThree = Observable.timer(3000, 4000);
-
-      //combineLatest also takes an optional projection function
-      const combinedProject = Observable
-        .combineLatest(timerOne, timerTwo, timerThree, (one, two, three) => {
-          return `
-            Timer One (Proj) Latest: ${one},
-            Timer Two (Proj) Latest: ${two}, 
-            Timer Three (Proj) Latest: ${three}`
-        });
-      //log values
-      const subscribe = combinedProject.subscribe(latestValuesProject => console.log(latestValuesProject));
-      setTimeout(done, 20000);
-    });
-  });
-  context('Observable.concat', () => {
-    it('concat 2 basic observables', () => {
-      //emits 1,2,3
-      const sourceOne = Observable.of(1, 2, 3);
-      //emits 4,5,6
-      const sourceTwo = Observable.of(4, 5, 6);
-      //emit values from sourceOne, when complete, subscribe to sourceTwo
-      const example = sourceOne.concat(sourceTwo);
-      //output: 1,2,3,4,5,6
-      const subscribe = example.subscribe(val => console.log('Example: Basic concat:', val));
-    });
-    it('concat as static method', () => {
-      //emits 1,2,3
-      const sourceOne = Observable.of(1, 2, 3);
-      //emits 4,5,6
-      const sourceTwo = Observable.of(4, 5, 6);
-
-      //used as static
-      const example = Observable.concat(sourceOne, sourceTwo);
-      //output: 1,2,3,4,5,6
-      const subscribe = example.subscribe(val => console.log('Example: static', val));
-    });
-    it('concat with delayed source', done => {
-      //emits 1,2,3
-      const sourceOne = Observable.of(1, 2, 3);
-      //emits 4,5,6
-      const sourceTwo = Observable.of(4, 5, 6);
-
-      //delay 3 seconds then emit
-      const sourceThree = sourceOne.delay(3000);
-      //sourceTwo waits on sourceOne to complete before subscribing
-      const example = sourceThree.concat(sourceTwo);
-      //output: 1,2,3,4,5,6
-      const subscribe = example.subscribe({
-        next: val => console.log('Example: Delayed source one:', val),
-        complete: done
-      });
-    });
-    it('concat with source that does not complete', done => {
-      //when source never completes, the subsequent observables never runs
-      const source = Observable.concat(Observable.interval(1000), Observable.of('This', 'Never', 'Runs'));
-      //outputs: 1,2,3,4....
-      const subscribe = source.subscribe(val => console.log('Example: Source never completes, second observable never runs:', val));
-      setTimeout(done, 10000);
-    });
-  });
-  context('Observable.concatAll', () => {
-    it('concatAll with observable', done => {
-      //emit a value every 2 seconds
-      const source = Observable.interval(2000);
-      const example = source
-      //for demonstration, add 10 to and return as observable
-        .map(val => Observable.of(val + 10))
-        //merge values from inner observable
-        .concatAll();
-      //output: 'Example with Basic Observable 10', 'Example with Basic Observable 11'...
-      const subscribe = example.subscribe(val => console.log('Example with Basic Observable:', val));
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 10000);
+      }, 2000);
+    });
+    it('combineLatest with projection function', done => {
+      const timerOne = Observable.timer(100, 400);
+      const timerTwo = Observable.timer(200, 400);
+      const timerThree = Observable.timer(300, 400);
+
+      const combinedProject = Observable
+        .combineLatest(timerOne, timerTwo, timerThree, (one, two, three) => {
+          return `Timer One (Proj) Latest: ${one},
+Timer Two (Proj) Latest: ${two}, 
+Timer Three (Proj) Latest: ${three}`
+        });
+      const subscribe = combinedProject.subscribe(latestValuesProject => console.log(latestValuesProject));
+      setTimeout(() => {
+        subscribe.unsubscribe();
+        done();
+      }, 2000);
+    });
+  });
+
+  /**
+   * signature: concat(observables: ...*): Observable
+   * Subscribe to observables in order as previous completes, emit values.
+   */
+  context('concat', () => {
+    it('concat 2 basic observables', () => {
+      const sourceOne = Observable.of(1, 2, 3);
+      const sourceTwo = Observable.of(4, 5, 6);
+      const example = sourceOne.concat(sourceTwo);
+      const subscribe = example.subscribe(val => console.log('Example: Basic concat:', val));
+    });
+    it('concat as static method', () => {
+      const sourceOne = Observable.of(1, 2, 3);
+      const sourceTwo = Observable.of(4, 5, 6);
+
+      const example = Observable.concat(sourceOne, sourceTwo);
+      const subscribe = example.subscribe(val => console.log('Example: static', val));
+    });
+    it('concat with delayed source', done => {
+      const sourceOne = Observable.of(1, 2, 3);
+      const sourceTwo = Observable.of(4, 5, 6);
+      const sourceThree = sourceOne.delay(300);
+      const example = sourceThree.concat(sourceTwo);
+      const subscribe = example.subscribe(val => console.log('Example: Delayed source one:', val), null, done);
+    });
+    it('concat with source that does not complete', done => {
+      const source = Observable.concat(Observable.interval(100), Observable.of('This', 'Never', 'Runs'));
+      const subscribe = source.subscribe(val => console.log('Example: Source never completes, second observable never runs:', val));
+      setTimeout(done, 1000);
+    });
+  });
+
+  /**
+   * signature: concatAll(): Observable
+   * Collect observables and subscribe to next when previous completes.
+   */
+  context('concatAll', () => {
+    it('concatAll with observable', done => {
+      const source = Observable.interval(200);
+      const example = source.map(val => Observable.of(val + 10)).concatAll();
+      const subscribe = example.subscribe(val => console.log('Example with Basic Observable:', val));
+
+      setTimeout(() => {
+        subscribe.unsubscribe();
+        done();
+      }, 1000);
     });
     it('concatAll with promise', done => {
-      //create and resolve basic promise
       const samplePromise = val => new Promise(resolve => resolve(val));
-      //emit a value every 2 seconds
-      const source = Observable.interval(2000);
+      const source = Observable.interval(200);
 
       const example = source
         .map<any, any>(val => samplePromise(val))
-        //merge values from resolved promise
         .concatAll();
-      //output: 'Example with Promise 0', 'Example with Promise 1'...
       const subscribe = example.subscribe(val => console.log('Example with Promise:', val));
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 10000);
+      }, 1000);
     });
     it('Delay while inner observables complete', done => {
-      const obs1 = Observable.interval(1000).take(5).map(val => `obs1: ${val}`);
-      const obs2 = Observable.interval(500).take(2).map(val => `obs2: ${val}`);
-      const obs3 = Observable.interval(2000).take(1).map(val => `obs3: ${val}`);
-      //emit three observables
-      const source = Observable.of(obs1, obs2, obs3);
-      //subscribe to each inner observable in order when previous completes
-      const example = source.concatAll();
-      /*
-       output: 0,1,2,3,4,0,1,0
-       How it works...
-       Subscribes to each inner observable and emit values, when complete subscribe to next
-       obs1: 0,1,2,3,4 (complete)
-       obs2: 0,1 (complete)
-       obs3: 0 (complete)
-       */
+      const obs1 = Observable.interval(100).take(5).map(val => `obs1: ${val}`);
+      const obs2 = Observable.interval(50).take(2).map(val => `obs2: ${val}`);
+      const obs3 = Observable.interval(200).take(1).map(val => `obs3: ${val}`);
 
-      const subscribe = example.subscribe({
-        next: val => console.log(val),
-        complete: done
-      });
+      const source = Observable.of(obs1, obs2, obs3);
+      const example = source.concatAll();
+
+      const subscribe = example.subscribe(console.log, null, done);
     });
   });
-  context('Observable.forkJoin', () => {
-    it('Making variable number of requests', done => {
-      const myPromise = val => new Promise(resolve => setTimeout(() => resolve(`Promise Resolved: ${val}`), 5000));
 
-      /*
-       when all observables complete, give the last
-       emitted value from each as an array
-       */
+  /**
+   * signature: forkJoin(...args, selector : function): Observable
+   * When all observables complete emit the last value from each.
+   */
+  context('forkJoin', () => {
+    it('Making variable number of requests', done => {
+      const myPromise = val => new Promise(resolve => setTimeout(() => resolve(`Promise Resolved: ${val}`), 500));
+
       const example = Observable.forkJoin(
-        //emit 'Hello' immediately
         Observable.of('Hello'),
-        //emit 'World' after 1 second
-        Observable.of('World').delay(1000),
-        //emit 0 after 1 second
-        Observable.interval(1000).take(1),
-        //emit 0...1 in 1 second interval
-        Observable.interval(1000).take(2),
-        //promise that resolves to 'Promise Resolved' after 5 seconds
+        Observable.of('World').delay(100),
+        Observable.interval(100).take(1),
+        Observable.interval(100).take(2),
         myPromise('RESULT')
       );
-      //output: ["Hello", "World", 0, 1, "Promise Resolved: RESULT"]
-      const subscribe = example.subscribe(val => console.log(val));
+      const subscribe = example.subscribe(console.log);
 
-      //make 5 requests
       const queue = Observable.of([1, 2, 3, 4, 5]);
-      //emit array of all 5 results
-      const exampleTwo = queue
-        .mergeMap(q => Observable.forkJoin(...q.map(myPromise)));
-      const subscribeTwo = exampleTwo.subscribe(val => console.log(val));
-
-      setTimeout(done, 6000);
+      const exampleTwo = queue.mergeMap(q => Observable.forkJoin(...q.map(myPromise)));
+      const subscribeTwo = exampleTwo.subscribe(console.log, null, done);
     });
   });
-  context('Observable.merge', () => {
-    it('merging multiple observables, static method', done => {
-      //emit every 2.5 seconds
-      const first = Observable.interval(2500);
-      //emit every 2 seconds
-      const second = Observable.interval(2000);
-      //emit every 1.5 seconds
-      const third = Observable.interval(1500);
-      //emit every 1 second
-      const fourth = Observable.interval(1000);
 
-      //emit outputs from one observable
+  /**
+   * signature: merge(input: Observable): Observable
+   * Turn multiple observables into a single observable.
+   */
+  context('merge', () => {
+    it('merging multiple observables, static method', done => {
+      const first = Observable.interval(250);
+      const second = Observable.interval(200);
+      const third = Observable.interval(150);
+      const fourth = Observable.interval(100);
+
       const example = Observable.merge(
         first.mapTo('FIRST!'),
         second.mapTo('SECOND!'),
         third.mapTo('THIRD'),
         fourth.mapTo('FOURTH')
       );
-      //output: "FOURTH", "THIRD", "SECOND!", "FOURTH", "FIRST!", "THIRD", "FOURTH"
-      const subscribe = example.subscribe(val => console.log(val));
+      const subscribe = example.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 10000);
+      }, 2000);
     });
     it('merge 2 observables, instance method', done => {
-      //emit every 2.5 seconds
-      const first = Observable.interval(2500).mapTo('FIRST');
-      //emit every 1 second
-      const second = Observable.interval(1000).mapTo('SECOND');
-      //used as instance method
+      const first = Observable.interval(250).mapTo('FIRST');
+      const second = Observable.interval(100).mapTo('SECOND');
       const example = first.merge(second);
-      //output: 0,1,0,2....
-      const subscribe = example.subscribe(val => console.log(val));
+      const subscribe = example.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 5000);
+      }, 2000);
     });
   });
-  context('Observable.mergeAll', () => {
+
+  /**
+   * signature: mergeAll(concurrent: number): Observable
+   * Collect and subscribe to all observables.
+   */
+  context('mergeAll', () => {
     it('mergeAll with promises', done => {
-      const myPromise = val => new Promise(resolve => setTimeout(() => resolve(`Result: ${val}`), 2000));
+      const myPromise = val => new Promise(resolve => setTimeout(() => resolve(`Result: ${val}`), 200));
       const source = Observable.of(1, 2, 3);
       const example = source
-      //map each value to promise
         .map<any, any>(val => myPromise(val))
-        //emit result from source
         .mergeAll();
 
-      const subscribe = example.subscribe({
-        next: val => console.log(val),
-        complete: done
-      });
+      const subscribe = example.subscribe(console.log, null, done);
     });
     it('mergeAll with concurrent parameter', done => {
-      const interval = Observable.interval(500).take(5);
-
-      /*
-       interval is emitting a value every 0.5s.  This value is then being mapped to interval that
-       is delayed for 1.0s.  The mergeAll operator takes an optional argument that determines how
-       many inner observables to subscribe to at a time.  The rest of the observables are stored
-       in a backlog waiting to be subscribe.
-       */
+      const interval = Observable.interval(50).take(5);
       const example = interval
-        .map(val => interval.delay(1000).take(3).map(ival => `interval : ${val} ${ival}`))
+        .map(val => interval.delay(100).take(3).map(ival => `interval : ${val} ${ival}`))
         .mergeAll()
-        .subscribe({
-          next: val => console.log(val),
-          complete: done
-        });
+        .subscribe(console.log, null, done);
     });
     it('mergeAll with concurrent parameter 2', done => {
-      const interval = Observable.interval(500);
-
-      /*
-       interval is emitting a value every 0.5s.  This value is then being mapped to interval that
-       is delayed for 1.0s.  The mergeAll operator takes an optional argument that determines how
-       many inner observables to subscribe to at a time.  The rest of the observables are stored
-       in a backlog waiting to be subscribe.
-       */
+      const interval = Observable.interval(50);
       const example = Observable.range(1, 10).map(val => interval.take(10).map(ival => `interval : ${val} ${ival}`))
         .mergeAll(5)
-        .subscribe({
-          next: console.log,
-          complete: done
-        });
+        .subscribe(console.log, null, done);
     });
   });
-  context('Observable.race', () => {
+
+  /**
+   * signature: race(): Observable
+   * The observable to emit first is used.
+   */
+  context('race', () => {
     it('race with 4 observables', done => {
-      //take the first observable to emit
       const example = Observable.race(
-        //emit every 1.5s
-        Observable.interval(1500),
-        //emit every 1s
-        Observable.interval(1000).mapTo('1s won!'),
-        //emit every 2s
-        Observable.interval(2000),
-        //emit every 2.5s
-        Observable.interval(2500)
+        Observable.interval(150),
+        Observable.interval(100).mapTo('1s won!'),
+        Observable.interval(200),
+        Observable.interval(250)
       );
       const subscribe = example.subscribe(console.log, console.error);
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 5000);
+      }, 1000);
     });
 
     it('race with an error', done => {
-      //Throws an error and ignore the rest of the observables.
       const first = Observable.of('first').delay(100).map(() => {
         throw 'error!!'
       });
@@ -345,73 +263,86 @@ Timer Three Latest: ${timerValThree}`);
     })
   });
 
-  context('Observable.startWith', () => {
+  /**
+   * signature: startWith(an: Values): Observable
+   * Emit given value first.
+   */
+  context('startWith', () => {
     it('startWith on number sequence', () => {
       const source = Observable.of(1, 2, 3);
-
       const example = source.startWith(0);
-
       const subscribe = example.subscribe(console.log);
     });
 
     it('startWith for initial scan value', () => {
       const source = Observable.of('World!', 'Goodbye', 'World!');
-
       const example = source
         .startWith('Hello')
-        .scan((acc, curr) => `${acc} - ${curr}`);
+        .scan((acc, curr) => `${acc} - ${curr}`, 'Real first');
 
       const subscribe = example.subscribe(console.log);
     });
 
     it('startWith multiple values', done => {
-      const source = Observable.interval(1000);
+      const source = Observable.interval(100);
       const example = source.startWith(-3, -2, -1);
       const subscribe = example.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 5000);
+      }, 1000);
     });
   });
 
-  context('Observable.withLatestFrom', () => {
+  /**
+   * signature: withLatestFrom(other: Observable, project: Function): Observable
+   * Also provide the last value from another observable.
+   */
+  context('withLatestFrom', () => {
     it('Latest value from quicker second source', done => {
-      const source = Observable.interval(5000);
-      const secondSource = Observable.interval(1000);
+      const source = Observable.interval(500);
+      const secondSource = Observable.interval(100);
       const example = source
         .withLatestFrom(secondSource)
         .map(([first, second]) => {
-          return `First Source (5s): ${first} Second Source (1s): ${second}`;
+          return `First Source (500ms): ${first} Second Source (100ms): ${second}`;
         });
       const subscribe = example.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 20000);
+      }, 2000);
     });
 
     it('Slower second source', done => {
-      const source = Observable.interval(5000);
-      const secondSource = Observable.interval(1000);
+      const source = Observable.interval(500);
+      const secondSource = Observable.interval(100);
 
       const example = secondSource
         .withLatestFrom(source)
         .map(([first, second]) => {
-          return `Source (1s): ${first} Latest From (5s): ${second}`;
+          return `Source (100ms): ${first} Latest From (500ms): ${second}`;
         });
       const subscribe = example.subscribe(console.log);
 
       setTimeout(() => {
         subscribe.unsubscribe();
         done();
-      }, 20000);
+      }, 2000);
     });
   });
 
-  context('Observable.zip', () => {
+  /**
+   * signature: zip(observables: *): Observable
+   * Description
+   * TL;DR: After all observables emit, emit values as an array
+   * The zip operator will subscribe to all inner observables, waiting for each to emit a value.
+   * Once this occurs, all values with the corresponding index will be emitted.
+   * This will continue until at least one inner observable completes.
+   */
+  context('zip', () => {
     it('zip multiple observables emitting at alternate intervals', done => {
       const sourceOne = Observable.of('Hello');
       const sourceTwo = Observable.of('World!');
@@ -421,16 +352,16 @@ Timer Three Latest: ${timerValThree}`);
       const example = Observable
         .zip(
           sourceOne,
-          sourceTwo.delay(1000),
-          sourceThree.delay(2000),
-          sourceFour.delay(3000)
+          sourceTwo.delay(100),
+          sourceThree.delay(200),
+          sourceFour.delay(300)
         );
 
       const subscribe = example.subscribe(console.log, console.error, done);
     });
 
     it('zip when 1 observable completes', done => {
-      const interval = Observable.interval(1000);
+      const interval = Observable.interval(100);
       const example = Observable
         .zip(
           interval,

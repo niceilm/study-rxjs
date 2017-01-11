@@ -212,7 +212,7 @@ describe('RxJS - Transformation', function () {
     });
     it('Map to single property', () => {
       const source = Observable.from([{ name: 'Joe', age: 30 }, { name: 'Frank', age: 20 }, { name: 'Ryan', age: 50 }]);
-      const example = source.map(person => person.name);
+      const example = source.map((person: any) => person.name);
       const subscribe = example.subscribe(val => console.log(val));
     });
   });
